@@ -42,7 +42,7 @@ backend pour un site et une app mobile.
 
 - La connexion entre "Authorization Service" et "Projects Service" se fait par une connexion http classique alors
   que ce sont deux services GRPC. La connexion devrait utiliser les clients grpc respectivement générés pour facilité
-  la tâche des prochains développeurs. 
+  la tâche des prochains développeurs et gagner en homogénéité. 
   
 - On pourrait aussi reprocher à cette architecture d'avoir une connexion directe entre deux services. Cependant, avec le 
   manque d'informations il est difficile de savoir si la communication entre ces deux services ("Authorization Service" 
@@ -55,7 +55,7 @@ backend pour un site et une app mobile.
 
 #### Que changeriez-vous dans cette architecture ?
 
-Pour moi il y aurait deux changements possibles à opérer :
+Pour moi il y aurait 3 changements possibles à opérer :
 
 - Changer le type connexion entre "Authorization Service" et "Projects Service" par une connexion GRPC en utilisant les
   clients générés.
@@ -68,11 +68,11 @@ Pour moi il y aurait deux changements possibles à opérer :
       - communiquer avec un sidecar qui lui va taper sur la service registry et faire le load-balancing vers le service 
         demandé correctement.
     
-  L'avantage du client side routing c'est que l'on a moins de latences réseaux car il y a moins d'aller retours qu'avec
-  une gateway ou un service proxy.
+    L'avantage du client side routing c'est que l'on a moins de latences réseaux car il y a moins d'aller retours qu'avec
+    une gateway ou un service proxy.
 
 
-  - la gateway aui a le rôle de rediriger le traffic de la bonne manière avec la bonne stratégie de load balancing, 
+  - la gatewa, qui a le rôle de rediriger le traffic de la bonne manière avec la bonne stratégie de load balancing, 
     du cache, des retry ect.
     
 - Enfin il serait possible de déplacer la logique "Authorization Service" dans l'API Gateway pour
@@ -93,18 +93,18 @@ service de projets.
 
 **Connexion 1**
 
-Pour : Simplicité d'utilisation, la gateway var se charger de trouver le service, de faire le load-balancing, de gérer 
+Pour : Simplicité d'utilisation, la gateway va se charger de trouver le service, de faire le load-balancing, de gérer 
 le cache, le retry ... 
 
 
-Contre : Plus de latence réseau, en effet on parle d'abord avec la gateway qui va surement parler à la service registry
-puis qui va parler au service concerné puis enfin qui va retourner la réponse du service.
+Contre : + de latence réseau, en effet on parle d'abord avec la gateway qui va surement parler à la service registry
+puis va parler au service concerné puis enfin qui va retourner la réponse du service.
 
 **Connexion 2**
 
 Pour : Moins de latences réseau puisqu'on communique "directement" avec le "Projects Service"
 
-Contre : Plus complexe, car l'app devra avoir connaissance de l'host de "Projects Service" et donc parler à la service 
+Contre : + complexe, car l'app devra avoir connaissance de l'host de "Projects Service" et donc parler à la service 
 registry ou être déployé avec un sidecar qui s'occupe de ça.
 
 #### Quel(s) connexion(s) choississeriez vous ?
@@ -143,8 +143,8 @@ Implique de devoir faire scale la gateway pour pouvoir bénéficier des avantage
 Je m'explique admettons que "Added service" ait été créé car c'est un service critique qui a besoin d'être répliqué sur 
 plusieurs instances, la gateway devra elle aussi absorber la charge de "Added service". 
 
-Si on divise "Added service" en 4 réplicas et que derrière c'est la gateway qui prend toutes la charge réseau parcequ'il 
-n'y a qu'une seule instance alors c'est complexifier son infrastructure gratuitement.
+Si on divise "Added service" en 4 réplicas et que derrière c'est la gateway qui prend toute la charge réseau parcequ'il 
+n'y a qu'une seule instance alors ça revient à complexifier son infrastructure gratuitement.
 
 
 #### Quel(s) connexion(s) choississeriez vous ?
@@ -171,11 +171,11 @@ un projet via notre service, nous devons envoyer l'URI de l'asset au projet. Deu
 **Connexion 1**
 
 Pour : On modifie le projet à un seul endroit : dans le "Projects Service", plus simple pour débuguer et savoir pourquoi
-par exemple on a tel chose dans la bdd. 
+par exemple on a tel valeur dans la bdd. 
 
 
-Contre : Plus de latence réseau car on envoie d'abord une requête au "Projects Service" qui va faire une requête à la bdd
-puis retourner le résultat : si c'est un succès ou pas.
+Contre : + de latences réseau car on envoie d'abord une requête au "Projects Service" qui va faire une requête à la bdd
+puis retourner le résultat, ça fait beaucoup d'aller retours.
 
 **Connexion 2**
 
@@ -194,5 +194,5 @@ micro services.
 
 Personnellement j'aurai mis un message broker (rabbit mq ou kafka) et fait l'update de l ÚRI de l'asset du project de manière asynchrone. De tel
 sorte que "Projects Service" écoute un topic ou channel en fonction du broker avec une garantie de livraison de message 
-de type `At-least-once delivery` (on ne peut pas perdre de message, mais il peut être joué plusieurs fois donc le service
-se doit d'être idem potent). 
+de type `At-least-once delivery` (on ne peut pas perdre de message, mais il peut être joué plusieurs fois donc la partie
+qui consomme le message se doit d'être idem potent). 
