@@ -1,0 +1,27 @@
+syntax = "proto3";
+option go_package = "sessions/";
+
+package sessions;
+
+service Sessions {
+    // Create a new token
+    rpc Create (CreateRequest) returns (TokenReply);
+
+    // Validate the token
+    rpc Validate (ValidateTokenRequest) returns (TokenReply);
+}
+
+message CreateRequest {
+    string user_id = 1;
+}
+
+message ValidateTokenRequest {
+    string token = 1;
+}
+
+message TokenReply {
+    bool valid = 1;
+    string token = 2;
+    int64 expired_at = 3;
+    int64 issued_at = 4;
+}
